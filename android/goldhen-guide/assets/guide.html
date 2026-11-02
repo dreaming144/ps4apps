@@ -1,0 +1,473 @@
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>GoldHEN Guide</title><style>body{font-family:sans-serif;background:#111827;color:rgba(255,255,255,.9);margin:0;padding:0;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wk-head{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:12px;background:#1f2937;padding:12px 16px;border-bottom:1px solid #374151;box-shadow:0 17px 8px -11px rgba(0,0,0,.2)}
+.wk-head img{width:36px;height:36px}.wk-head b{font-size:1.25rem;color:#fff}.wk-head span{font-size:.75rem;color:rgba(255,255,255,.7);display:block}
+.wk-body{padding:16px;max-width:820px;margin:0 auto}
+h1{font-size:1.5rem;color:#fff;margin:.4em 0}h2{font-size:1.125rem;color:#3b82f6;border-bottom:1px solid #374151;padding-bottom:6px;margin-top:1.4em}h3{color:#60a5fa}
+p,ol,ul,table,pre{background:#1f2937;border:1px solid #374151;border-radius:10px;padding:12px 14px;margin:10px 0}
+ol,ul{padding-left:34px}li{margin:4px 0}strong{color:#fff}
+a{color:#3b82f6}hr{border:0;border-top:1px solid #374151;margin:18px 0}
+code{font-family:ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;background:rgba(59,130,246,.15);color:#93c5fd;padding:1px 5px;border-radius:5px;white-space:pre-wrap}
+pre{background:#0b1220;overflow-x:auto}pre code{background:none;padding:0}
+table{border-collapse:separate;border-spacing:0;width:100%;padding:0;overflow:hidden}td,th{border-bottom:1px solid #374151;padding:8px;text-align:left;vertical-align:top}th{background:#2563eb;color:#fff}tr:nth-child(even) td{background:rgba(255,255,255,.05)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#2563eb;border-radius:10px}.wk-head{border-bottom:2px solid #d4a017}.wk-head b{background:linear-gradient(#ffe066,#c8960c);-webkit-background-clip:text;color:transparent}/*wk-gold*/</style></head><body><div class="wk-head"><img src="goldkitty.svg"><div><b>GoldHEN Guide</b><span>WebKitty · PSFree + Lapse · 9.00</span></div></div><div class="wk-body"><h1>GoldHEN Jailbreak Guide</h1>
+<h2>PSFree + Lapse on firmware 9.00 (no USB stick needed)</h2>
+<p><strong>Date:</strong> 31 Oct 2026 (Australia/Perth)<br />
+<strong>Console:</strong> PS4, firmware <strong>9.00</strong><br />
+<strong>Method:</strong> PSFree (browser) + Lapse (kernel) + GoldHEN<br />
+<strong>Not this guide:</strong> exfathax USB, Vue Extended Storage, PPPwn</p>
+<p>Read this on your phone. Follow the numbered steps. If something fails, jump to <strong>Troubleshooting</strong> before looking at Troubleshooting.</p>
+<hr />
+<h2>Quick words (so nothing is scary)</h2>
+<table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Plain meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Jailbreak / HEN</strong></td>
+<td>Temporary unlock. Lets GoldHEN run. Gone after a full power-off unless you use Rest Mode.</td>
+</tr>
+<tr>
+<td><strong>GoldHEN</strong></td>
+<td>The home menu tool that appears after a successful jailbreak.</td>
+</tr>
+<tr>
+<td><strong>PSFree</strong></td>
+<td>The browser exploit (the page that runs in the PS4 web browser).</td>
+</tr>
+<tr>
+<td><strong>Lapse</strong></td>
+<td>The kernel exploit that comes <em>after</em> PSFree. No USB image.</td>
+</tr>
+<tr>
+<td><strong>WebKitty</strong></td>
+<td>The nice web page that packages PSFree + Lapse + GoldHEN for you.</td>
+</tr>
+<tr>
+<td><strong>Host / server</strong></td>
+<td>Your phone or PC serving that page over Wi‑Fi on port <strong>8081</strong>.</td>
+</tr>
+<tr>
+<td><strong>Cache</strong></td>
+<td>The PS4 browser saving the page files so you can jailbreak again with less (or no) help from the phone.</td>
+</tr>
+<tr>
+<td><strong>Rest Mode</strong></td>
+<td>Sleep. Keep "Keep Application Suspended" on so GoldHEN often survives sleep. Full power-off needs another jailbreak.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>A. What you need</h2>
+<ol>
+<li><strong>PS4 Slim on firmware 9.00</strong> (do not update).</li>
+<li><strong>Same Wi‑Fi</strong> for the PS4 and your phone/PC (the host).</li>
+<li><strong>One of these hosts</strong> (pick one):</li>
+<li><strong>Android phone with Termux</strong> (easiest to carry) — recommended.</li>
+<li><strong>Any laptop/PC</strong> that can run Python 3 (Windows, Mac, or Linux).</li>
+<li><strong>The WebKitty folder</strong> (see section B) on the host phone or PC.</li>
+<li><strong>No special USB stick</strong> for this method. Leave any old <code>exfathax</code> stick unplugged.</li>
+</ol>
+<p>Optional but smart:
+- A charger for the phone so Termux stays alive.
+- Screenshot this cheat sheet (section I) onto your phone.</p>
+<hr />
+<h2>B. One-time: get the WebKitty files onto your phone or PC</h2>
+<p>You only do this once (or when you update the host zip).</p>
+<h3>Option 1 — Pack a USB / zip of the host files</h3>
+<p>The zip should contain <strong>both</strong>:</p>
+<ul>
+<li><code>webkitty/</code>  — the full WebKitty site (~12 MB)</li>
+<li><code>server-webkitty.py</code> — tiny Python script that serves it on port <strong>8081</strong></li>
+</ul>
+<p>On the build machine those are the WebKitty site folder and its Python server script.</p>
+<p><strong>Pack it like this:</strong></p>
+<pre><code class="language-bash">cd /path/to/webkitty-host
+zip -r ~/webkitty-8081.zip server-webkitty.py webkitty
+</code></pre>
+<p>Then copy <code>webkitty-8081.zip</code> to the Android phone (USB, Syncthing, AirDrop, Drive, or similar).</p>
+<p><strong>On the Android phone (Termux), after the zip is on the phone:</strong></p>
+<pre><code class="language-bash"># Install unzip + python if needed (one-time)
+pkg update -y
+pkg install -y python unzip
+
+# Put the zip somewhere Termux can see it, then:
+mkdir -p ~/ps4
+cd ~/ps4
+unzip -o /path/to/webkitty-8081.zip
+# You should now have:
+#   ~/ps4/server-webkitty.py
+#   ~/ps4/webkitty/   (with index.html inside)
+ls server-webkitty.py webkitty/index.html
+</code></pre>
+<blockquote>
+<p>Tip: If you use a file manager app, copy the zip into Termux home with something like<br />
+<code>cp /sdcard/Download/webkitty-8081.zip ~/ps4/</code> then unzip there.</p>
+</blockquote>
+<p><strong>On a PC instead of a phone:</strong></p>
+<ol>
+<li>Unzip so you have <code>server-webkitty.py</code> and <code>webkitty/</code> next to each other in one folder.</li>
+<li>Open a terminal in that folder.</li>
+<li>Run: <code>python3 server-webkitty.py</code> (Windows: <code>python server-webkitty.py</code>).</li>
+<li>Leave that window open. Note the PC's Wi‑Fi IP (see section C step 6).</li>
+</ol>
+<h3>Option 2 — Download WebKitty yourself (if you have no zip)</h3>
+<p>Only if the packed zip is missing and you have internet on the host device:</p>
+<pre><code class="language-bash"># In Termux or on a PC with git + python
+pkg install -y git python   # Termux; skip on PC if already installed
+mkdir -p ~/ps4 &amp;&amp; cd ~/ps4
+git clone https://github.com/ArabPixel/WebKitty.git webkitty
+</code></pre>
+<p>Then create <code>server-webkitty.py</code> next to the <code>webkitty</code> folder with this exact content:</p>
+<pre><code class="language-python">import http.server, socketserver, os
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'webkitty'))
+class H(http.server.SimpleHTTPRequestHandler):
+    extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
+        '.manifest':'text/cache-manifest', '.mjs':'text/javascript',
+        '.js':'text/javascript', '.bin':'application/octet-stream'}
+    def end_headers(self):
+        self.send_header('Cache-Control','no-cache'); super().end_headers()
+socketserver.ThreadingTCPServer.allow_reuse_address=True
+with socketserver.ThreadingTCPServer(('0.0.0.0',8081),H) as s: s.serve_forever()
+</code></pre>
+<p>Save it as <code>~/ps4/server-webkitty.py</code>.</p>
+<h3>What NOT to use</h3>
+<ul>
+<li>Do <strong>not</strong> use the older <strong>Nazky</strong> page on port <strong>8080</strong>. That is a different site. If you ever see an error like <em>"This only works when hosted as a local server"</em> on a Nazky-looking page, you are on the wrong host. Close it and use <strong>:8081</strong> WebKitty instead.</li>
+<li>Do <strong>not</strong> open <code>https://</code> GitHub pages on the PS4 browser. The PS4 often shows <strong>"cannot communicate via SSL"</strong>. Always use plain <strong>http://</strong> to a local IP.</li>
+</ul>
+<hr />
+<h2>C. Phone Termux host — start the server every time you need it</h2>
+<p>Do this whenever the PS4 needs a fresh jailbreak and the cache alone is not enough (see section H).</p>
+<ol>
+<li>Connect the phone to the <strong>same Wi‑Fi</strong> as the PS4.</li>
+<li>Open <strong>Termux</strong>.</li>
+<li>Keep the phone awake for the jailbreak:</li>
+</ol>
+<pre><code class="language-bash">termux-wake-lock
+</code></pre>
+<ol>
+<li>Go to the folder:</li>
+</ol>
+<pre><code class="language-bash">cd ~/ps4
+</code></pre>
+<ol>
+<li>Start the server:</li>
+</ol>
+<pre><code class="language-bash">python server-webkitty.py
+</code></pre>
+<ul>
+<li>You should see almost nothing (it just sits there). That means it is running.</li>
+<li>Leave Termux open. Do not swipe it away.</li>
+<li>
+<p>Optional background start: <code>nohup python server-webkitty.py &amp;</code><br />
+     Stop later with: <code>pkill -f server-webkitty.py</code></p>
+</li>
+<li>
+<p>Find your phone's Wi‑Fi IP address:</p>
+</li>
+<li>Phone Settings → Wi‑Fi → tap your network → look for <strong>IP address</strong><br />
+     (example: <code>192.168.1.42</code> — yours will differ at home).</li>
+<li>Or in Termux:</li>
+</ul>
+<pre><code class="language-bash">ifconfig 2&gt;/dev/null | grep -A1 wlan || ip addr show wlan0
+</code></pre>
+<ol>
+<li>On the phone browser, smoke-test:</li>
+</ol>
+<pre><code>http://localhost:8081/
+</code></pre>
+<p>You should see the <strong>WebKitty</strong> page. If not, the server is not running or the files are in the wrong place.</p>
+<ol>
+<li>Write down (or screenshot):</li>
+</ol>
+<pre><code>http://YOUR_PHONE_IP:8081/
+</code></pre>
+<p>Example shape: <code>http://192.168.1.42:8081/</code></p>
+<h3>"Address already in use"</h3>
+<p>An old Python server is still running. Fix:</p>
+<pre><code class="language-bash">pkill -f server-webkitty.py
+# or force-close Termux fully, reopen, then cd ~/ps4 &amp;&amp; python server-webkitty.py
+</code></pre>
+<hr />
+<h2>D. PS4 network setup (block updates)</h2>
+<p>Sony can brick the jailbreak path with a system update. Block updates.</p>
+<h3>Which network? Option A (best): spare offline router</h3>
+<p>Use a spare offline router, with no internet:</p>
+<ol>
+<li>Factory-reset it.</li>
+<li>Join its default Wi‑Fi from the sticker.</li>
+<li>Open <code>http://192.168.10.1</code> (or the address on the sticker).</li>
+<li>Set a Wi‑Fi name and password. <strong>Skip the internet step.</strong> Leave AdGuard off.</li>
+<li>Connect the phone/Nexus that hosts the server and the PS4 to it.</li>
+</ol>
+<p>The PS4 internet connection test will fail. That is fine.</p>
+<p><strong>Never set this router up on the home network</strong>: it uses the same IP (192.168.10.1) as the home router and will clash.</p>
+<h3>Option B (backup): phone hotspot</h3>
+<p>Turn on the hotspot and connect the host phone and the PS4 to it. The DNS steps below apply to both options.</p>
+<h3>Path D1 — Use public update-block DNS (recommended if you stay online)</h3>
+<ol>
+<li>On the PS4: <strong>Settings → Network → Set Up Internet Connection</strong>.</li>
+<li>Choose your Wi‑Fi → <strong>Custom</strong>.</li>
+<li>IP Address Settings: <strong>Automatic</strong> (unless you know you need Manual).</li>
+<li>DHCP Host Name: Do Not Specify.</li>
+<li>DNS Settings: <strong>Manual</strong>.</li>
+<li>Enter:</li>
+<li><strong>Primary DNS:</strong> <code>165.227.83.145</code></li>
+<li><strong>Secondary DNS:</strong> <code>192.241.221.79</code><br />
+   (These are the well-known Al‑Azif PS4 update-block DNS servers.)<br />
+   If those don't work, try Modded Warfare's hosts: <code>45.56.67.85</code> or <code>62.210.38.117</code>.</li>
+<li>MTU: Automatic. Proxy: Do Not Use.</li>
+<li>Test Internet Connection. It can say "Internet: Failed" for some checks and still be fine for the local host — what matters is the PS4 is on the same Wi‑Fi as the phone and can open <code>http://PHONE_IP:8081/</code>.</li>
+</ol>
+<h3>Path D2 — Stay offline after the first successful cache</h3>
+<ol>
+<li>First jailbreak while the phone host is on (sections E + H).</li>
+<li>After the page has cached to <strong>100%</strong> and you have jailbroken successfully once, you can turn the PS4 network <strong>off</strong> for day-to-day use and still re-run from the browser cache (see H).</li>
+<li>Trade-off: some features need LAN; for a pure offline box this is fine.</li>
+</ol>
+<h3>Path D3 — If you later get a home AdGuard / Pi-hole</h3>
+<p>Point Primary DNS at that box's LAN IP. Until then, use D1 or D2.</p>
+<h3>Never do this</h3>
+<ul>
+<li>Do <strong>not</strong> sign into <strong>PSN</strong> on this console.</li>
+<li>Do <strong>not</strong> accept a <strong>System Software Update</strong>.</li>
+<li>Do <strong>not</strong> use Safe Mode "Update System Software" unless you intend to leave 9.00.</li>
+</ul>
+<hr />
+<h2>E. First jailbreak (the real run)</h2>
+<p>Phone server must already be running (section C). PS4 on same Wi‑Fi.</p>
+<ol>
+<li>On the PS4, open the <strong>Internet Browser</strong><br />
+   (the normal browser app — <strong>not</strong> "User's Guide", not Settings help).</li>
+<li>In the address bar type exactly (use <strong>http</strong>, your phone IP, port <strong>8081</strong>):</li>
+</ol>
+<pre><code>http://YOUR_PHONE_IP:8081/
+</code></pre>
+<ol>
+<li>Wait. The page should load <strong>WebKitty</strong> (title / logo says WebKitty).</li>
+<li>Let it <strong>cache</strong>. Watch for a progress indicator / checkmark. Wait until it reaches <strong>100%</strong> or shows that caching finished.<br />
+   First time can take a minute. Be patient. Do not spam the button yet.</li>
+<li>Press the <strong>OPTIONS</strong> button on the controller → choose <strong>Refresh</strong> (reload the page once).</li>
+<li>On the WebKitty screen:</li>
+<li>Exploit / chain: choose <strong>PSFree</strong> with <strong>Lapse</strong> (often labelled like "PSFree Lapse", Modular or Bundle — either is fine on 9.00).</li>
+<li>Payload / HEN: choose <strong>GoldHEN</strong>.</li>
+<li>Tap <strong>Start</strong> (or the main jailbreak button).</li>
+<li>Wait. Do not leave the page. You may see status text. Success usually ends with a <strong>GoldHEN</strong> notification / toast on screen.</li>
+<li>Hold the browser <strong>Back</strong> button (or close the browser) and return to the home screen. <strong>GoldHEN</strong> should appear on the home row / as a running tool.</li>
+<li>You are jailbroken for this power cycle. Put the console in <strong>Rest Mode</strong> when you stop playing (see G) so you do not have to redo this every short break.</li>
+</ol>
+<h3>First-time tip if a PC host is already on the same Wi‑Fi</h3>
+<p>You can do steps E1–E10 once using a PC host on the same LAN:</p>
+<pre><code>http://YOUR_PC_IP:8081/
+</code></pre>
+<p>(WebKitty on a PC on the same LAN). Afterwards you only need the phone when the cache is missing or after a full power-off without cache. Still pack the phone host — do not rely on a remote PC once you are at your own house.</p>
+<hr />
+<h2>F. Troubleshooting</h2>
+<h3>"Cannot communicate via SSL" / SSL error</h3>
+<p>You opened an <strong>https://</strong> page. The PS4 browser hates many HTTPS hosts.</p>
+<ul>
+<li>Fix: use <strong><code>http://</code></strong> and a <strong>local IP</strong> (<code>192.168.…</code> or <code>10.…</code>), never <code>https://github…</code> or random HTTPS mirrors.</li>
+<li>Correct shape: <code>http://192.168.x.x:8081/</code></li>
+</ul>
+<h3>"This only works when hosted as a local server" (Nazky / :8080 page)</h3>
+<p>You are on the <strong>wrong page</strong> (old Nazky PSFree on port 8080).</p>
+<ul>
+<li>Fix: close it. Open <code>http://YOUR_PHONE_IP:8081/</code> (WebKitty).</li>
+<li>Never use <code>:8080</code> for this Lapse guide.</li>
+</ul>
+<h3>"Not enough memory"</h3>
+<p>Common and usually harmless.</p>
+<ol>
+<li>Press <strong>OK</strong>.</li>
+<li>Tap <strong>Start</strong> again.</li>
+<li>If it repeats many times: leave the browser with Back, reopen the same URL, Refresh once, Start again.</li>
+</ol>
+<h3>Page stuck / spinner forever</h3>
+<ol>
+<li>Press <strong>Back</strong>.</li>
+<li>Open the same <code>http://…:8081/</code> again.</li>
+<li>OPTIONS → Refresh.</li>
+<li>Start again.</li>
+</ol>
+<h3>Black screen / freeze / no response</h3>
+<ol>
+<li>Hold the PS4 power button until it fully shuts down (beeps, then off). Wait 20 seconds.</li>
+<li>Power on.</li>
+<li>Start the phone server again if needed.</li>
+<li>Retry from section E.</li>
+</ol>
+<h3>Phone IP changed / page will not load</h3>
+<p>Routers often give the phone a new IP after reboot.</p>
+<ol>
+<li>Re-check the phone Wi‑Fi IP (section C step 6).</li>
+<li>Update the URL on the PS4.</li>
+<li>Confirm <code>http://localhost:8081/</code> still works on the phone.</li>
+</ol>
+<h3>WebKitty loads but Start does nothing</h3>
+<ul>
+<li>Confirm firmware is still <strong>9.00</strong> (Settings → System → System Information).</li>
+<li>Confirm you picked <strong>PSFree + Lapse</strong> and <strong>GoldHEN</strong>.</li>
+<li>Try the other PSFree Lapse style (Modular ↔ Bundle) if both appear.</li>
+<li>Fully close the browser, reopen, Refresh, Start.</li>
+</ul>
+<h3>Termux "python: command not found"</h3>
+<pre><code class="language-bash">pkg update -y
+pkg install -y python
+</code></pre>
+<h3>Firewall on a Windows PC host</h3>
+<p>Allow Python on private networks, or temporarily allow inbound TCP port <strong>8081</strong>, or the PS4 cannot reach the PC.</p>
+<hr />
+<h2>G. After success — daily habits</h2>
+<ol>
+<li><strong>Rest Mode tip</strong><br />
+   Enable Rest Mode and turn <strong>on</strong> "Keep Application Suspended" (wording may vary slightly). GoldHEN often survives Rest Mode. A full power-off usually needs another browser run.</li>
+<li><strong>Never sign into PSN</strong> on this console.</li>
+<li><strong>Never system-update.</strong> Keep the update-block DNS (D1) or stay offline (D2).</li>
+<li><strong>No special USB for Lapse.</strong> You do not insert an exfathax stick. If you still own one, leave it unplugged — plugging it at the wrong time can crash a boot.</li>
+<li><strong>GoldHEN settings</strong> (optional later): inside GoldHEN you can toggle debug settings, bin loader, etc. You do not need any of that for a basic jailbreak.</li>
+<li>If GoldHEN is missing after a full shutdown, just repeat section E (often faster once cached — see H).</li>
+</ol>
+<hr />
+<h2>H. Offline / after the first cache — when do you need the phone again?</h2>
+<h3>How caching works (simple)</h3>
+<p>The first time WebKitty loads, the PS4 browser downloads and stores the exploit files for your firmware (<strong>firmware-based caching</strong>). When that finishes at <strong>100%</strong>, later visits can reuse those files.</p>
+<h3>Practical rules</h3>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Need phone server?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First ever jailbreak</td>
+<td><strong>Yes</strong> — phone (or a PC on the same LAN) must serve the page.</td>
+</tr>
+<tr>
+<td>Full power-off, cache still present, same URL bookmarked</td>
+<td>Often <strong>no</strong> — open the browser bookmark / history entry and run again. If it fails, start the phone.</td>
+</tr>
+<tr>
+<td>Cleared browser cookies/data / "rebuild database" / new user</td>
+<td><strong>Yes</strong> — cache is gone.</td>
+</tr>
+<tr>
+<td>Phone off Wi‑Fi but cache warm</td>
+<td>Try the browser alone; if the page is blank or incomplete, start the phone.</td>
+</tr>
+<tr>
+<td>You changed Wi‑Fi and the old IP is bookmarked</td>
+<td>Update the bookmark to the new <code>http://NEW_IP:8081/</code> or use history after one good load.</td>
+</tr>
+</tbody>
+</table>
+<h3>Make a bookmark after the first good load</h3>
+<ol>
+<li>After WebKitty loads successfully once, use the browser menu to <strong>Add to Bookmarks</strong>.</li>
+<li>Name it <code>WebKitty</code> or <code>Jailbreak</code>.</li>
+<li>Next time: open the bookmark → wait/cache if needed → Refresh → GoldHEN → Start.</li>
+</ol>
+<h3>When the phone is required again</h3>
+<ul>
+<li>Cache cleared or corrupt.</li>
+<li>WebKitty files updated (re-copy the zip and re-cache).</li>
+<li>Bookmark points at a dead IP and you have no working history entry.</li>
+</ul>
+<p>Keep the Termux setup forever. It is your safety net.</p>
+<hr />
+<h2>I. Cheat sheet (one page)</h2>
+<h3>Phone — start host</h3>
+<pre><code class="language-bash">termux-wake-lock
+cd ~/ps4
+python server-webkitty.py
+# find IP in Wi-Fi settings, then on PS4:
+# http://PHONE_IP:8081/
+</code></pre>
+<h3>PC — start host</h3>
+<pre><code class="language-bash">cd /path/to/folder   # folder that contains server-webkitty.py + webkitty/
+python3 server-webkitty.py
+# http://PC_IP:8081/
+</code></pre>
+<h3>PS4 — every jailbreak</h3>
+<ol>
+<li>Browser (not User's Guide)</li>
+<li><code>http://HOST_IP:8081/</code>   ← <strong>http</strong>, port <strong>8081</strong>, WebKitty only</li>
+<li>Wait cache <strong>100%</strong></li>
+<li>OPTIONS → Refresh</li>
+<li><strong>PSFree Lapse</strong> + <strong>GoldHEN</strong> → <strong>Start</strong></li>
+<li>Wait for GoldHEN toast → Back to home</li>
+<li>Rest Mode when done</li>
+</ol>
+<h3>Update-block DNS (manual)</h3>
+<ul>
+<li>Primary: <code>165.227.83.145</code></li>
+<li>Secondary: <code>192.241.221.79</code></li>
+<li>If those don't work, try Modded Warfare's hosts: <code>45.56.67.85</code> or <code>62.210.38.117</code>.</li>
+</ul>
+<h3>Do not</h3>
+<ul>
+<li><code>https://</code> on the PS4 browser  </li>
+<li>Port <code>:8080</code> Nazky page  </li>
+<li>PSN login  </li>
+<li>System update  </li>
+<li>exfathax USB for this method  </li>
+</ul>
+<h3>Quick fixes</h3>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSL error</td>
+<td>Use <code>http://</code> local IP</td>
+</tr>
+<tr>
+<td>Not enough memory</td>
+<td>OK → Start again</td>
+</tr>
+<tr>
+<td>Black screen</td>
+<td>Hold power for full off → retry</td>
+</tr>
+<tr>
+<td>Stuck page</td>
+<td>Back → reopen → Refresh → Start</td>
+</tr>
+<tr>
+<td>Wrong page / local-server error</td>
+<td>Use <code>:8081</code> WebKitty</td>
+</tr>
+<tr>
+<td>Address already in use</td>
+<td><code>pkill -f server-webkitty.py</code> then start again</td>
+</tr>
+<tr>
+<td>IP changed</td>
+<td>Re-check phone Wi‑Fi IP</td>
+</tr>
+</tbody>
+</table>
+<h3>PC host backup URL (same LAN only)</h3>
+<pre><code>http://YOUR_PC_IP:8081/
+</code></pre>
+<hr />
+<h2>Packing checklist</h2>
+<ul>
+<li>[ ] <code>webkitty-8081.zip</code> (or folder) on the phone / USB  </li>
+<li>[ ] Termux installed; <code>python</code> works; zip unzipped under <code>~/ps4</code>  </li>
+<li>[ ] One successful smoke test: phone <code>http://localhost:8081/</code> shows WebKitty  </li>
+<li>[ ] One successful PS4 run on <code>:8081</code> (optional but useful)  </li>
+<li>[ ] This guide saved on the phone  </li>
+<li>[ ] Remember: never update, never PSN, Rest Mode keeps GoldHEN longer  </li>
+</ul>
+<hr />
+<p><em>Guide for GoldHEN on firmware 9.00. Method: PSFree + Lapse + GoldHEN via WebKitty on port 8081.</em></p></div></body></html>

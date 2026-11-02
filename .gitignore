@@ -1,0 +1,33 @@
+# Android
+*.keystore
+*.jks
+*.apk
+*.idsig
+*.dex
+*.class
+build/
+local.properties
+
+# Homebrew / OpenOrbis
+*.pkg
+*.elf
+*.oelf
+*.o
+eboot.bin
+pkg.gp4
+sce_sys/param.sfo
+sce_module/*.prx
+sce_sys/about/*.sprx
+**/x64/
+
+# Secrets and junk
+*.pem
+*.p12
+*.key
+.env
+.env.*
+*.secrets
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc

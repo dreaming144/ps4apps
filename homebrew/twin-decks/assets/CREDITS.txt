@@ -1,0 +1,14 @@
+#MUSIC
+All 10 bundled tracks: Twin Decks Studio, released under CC0 1.0 (public domain dedication).
+Neon Avenue 124  ·  Midnight Circuit 130  ·  Chrome Breaks 174  ·  Dusty Crates 90  ·  Basement Pulse 126
+Iron Lung 134  ·  Liquid Fireflies 172  ·  Sunset Garage 132  ·  Low End Lab 95  ·  Afterhours Acid 128
+Synthesised from scratch for this app. No samples from any third party.
+#TYPEFACE
+Inter by Rasmus Andersson and contributors. SIL Open Font License 1.1 (Inter-OFL.txt).
+#LIBRARIES
+dr_mp3 and dr_wav by David Reid, public domain / MIT-0.
+stb_vorbis and stb_truetype by Sean Barrett, public domain / MIT.
+SDL2, zlib licence. OpenOrbis PS4 Toolchain, GPL-3.0 tools.
+#YOUR MUSIC
+Copy MP3, WAV or OGG files to /data/djdecks/music (FTP) or a USB folder called music or djdecks.
+Only play music you have the right to use.

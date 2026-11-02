@@ -1,0 +1,11 @@
+# file|title|artist|bpm|licence|source
+neon_avenue.ogg|Neon Avenue|Twin Decks Studio|124|CC0 1.0|Original, made for Twin Decks
+midnight_circuit.ogg|Midnight Circuit|Twin Decks Studio|130|CC0 1.0|Original, made for Twin Decks
+chrome_breaks.ogg|Chrome Breaks|Twin Decks Studio|174|CC0 1.0|Original, made for Twin Decks
+dusty_crates.ogg|Dusty Crates|Twin Decks Studio|90|CC0 1.0|Original, made for Twin Decks
+basement_pulse.ogg|Basement Pulse|Twin Decks Studio|126|CC0 1.0|Original, made for Twin Decks
+iron_lung_techno.ogg|Iron Lung|Twin Decks Studio|134|CC0 1.0|Original, made for Twin Decks
+liquid_fireflies.ogg|Liquid Fireflies|Twin Decks Studio|172|CC0 1.0|Original, made for Twin Decks
+sunset_garage.ogg|Sunset Garage|Twin Decks Studio|132|CC0 1.0|Original, made for Twin Decks
+low_end_lab.ogg|Low End Lab|Twin Decks Studio|95|CC0 1.0|Original, made for Twin Decks
+afterhours_acid.ogg|Afterhours Acid|Twin Decks Studio|128|CC0 1.0|Original, made for Twin Decks
