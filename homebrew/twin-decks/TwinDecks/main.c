@@ -138,9 +138,14 @@ static inline float bq(BQ*q,int ch,float x){ float y=q->b0*x+q->z1[ch]; q->z1[ch
 #define PS_N 4096
 #define FL_N 2048
 static const int CombL[4]={1690,1760,1620,1545}, ApL[2]={605,480};
+#define NSTEM 4
+enum { STEM_VOC, STEM_DRM, STEM_BAS, STEM_OTH };
+static const char*STEM_SUF[NSTEM]={"_vocals","_drums","_bass","_other"};
+static const char*STEM_LBL[NSTEM]={"VOC","DRM","BAS","OTH"};
 typedef struct {
   /* track */
   int16_t*pcm; long n; int rate; char title[160],artist[120]; float bpm; double first; /* first beat, seconds */
+  int16_t*stpcm[NSTEM]; long stn[NSTEM]; int sthave[NSTEM]; float stem[NSTEM];
   uint8_t *wpk,*wlo,*wmi,*whi; int nb; uint8_t ov[3][656];
   /* transport */
   volatile double pos; volatile int playing, preview; double cue; int range; float tempo; int keylock,sync,vinyl;
@@ -170,6 +175,32 @@ static void deck_coefs(Deck*k){
   if(k->c_filt!=k->filt){ k->c_filt=k->filt; float v=k->filt; k->fltOn=fabsf(v)>0.03f;
     if(v<0) bq_set(&k->flt,BQ_LP,20000*powf(0.008f,-v),1.0f,0); else if(v>0) bq_set(&k->flt,BQ_HP,20*powf(400,v),1.0f,0); } }
 static inline float rd(float*b,int N,float idx){ while(idx<0)idx+=N; int i=(int)idx; float f=idx-i; return b[i%N]*(1-f)+b[(i+1)%N]*f; }
+static int16_t*decode(const char*path,long*frames,int*rate);
+
+static int is_stem_sidecar(const char*name){
+  const char*dot=strrchr(name,'.'); if(!dot)return 0; char base[256]; size_t n=(size_t)(dot-name); if(n>=sizeof base)n=sizeof base-1;
+  memcpy(base,name,n); base[n]=0;
+  for(int i=0;i<NSTEM;i++){ size_t sl=strlen(STEM_SUF[i]); if(n>sl&&!strcasecmp(base+n-sl,STEM_SUF[i]))return 1; }
+  if(n>13&&!strcasecmp(base+n-13,"_instrumental"))return 1;
+  return 0;
+}
+static void stem_clear(Deck*k){ for(int i=0;i<NSTEM;i++){ free(k->stpcm[i]); k->stpcm[i]=0; k->stn[i]=0; k->sthave[i]=0; k->stem[i]=0; } }
+static void stem_path(char*out,size_t sz,const char*mainpath,const char*suf,const char*ext){
+  char base[512]; snprintf(base,sizeof base,"%s",mainpath); char*dot=strrchr(base,'.'); if(dot)*dot=0; snprintf(out,sz,"%s%s%s",base,suf,ext); }
+static int stem_load_one(Deck*k,int si,const char*mainpath){
+  static const char*exts[]={".ogg",".wav",".mp3",".OGG",".WAV",".MP3"};
+  for(unsigned e=0;e<sizeof exts/sizeof*exts;e++){ char p[512]; stem_path(p,sizeof p,mainpath,STEM_SUF[si],exts[e]);
+    long fr; int sr; int16_t*pcm=decode(p,&fr,&sr); if(!pcm)continue;
+    if(sr!=k->rate){ free(pcm); continue; }
+    k->stpcm[si]=pcm; k->stn[si]=fr; k->sthave[si]=1; k->stem[si]=1.0f; return 1; }
+  return 0;
+}
+static void stem_load_all(Deck*k,const char*mainpath){ stem_clear(k); if(!k->pcm)return; int n=0;
+  for(int i=0;i<NSTEM;i++) if(stem_load_one(k,i,mainpath)) n++; (void)n; }
+static void stem_add_at(Deck*k,double pos,float*l,float*r){
+  long p=(long)pos; if(p<0)return; for(int i=0;i<NSTEM;i++){ if(!k->sthave[i]||k->stem[i]<=0.001f)continue;
+    if(p>=k->stn[i]-1)continue; float f=(float)(pos-p); int16_t*s=&k->stpcm[i][p*2]; float g=k->stem[i];
+    *l+=((s[0]+(s[2]-s[0])*f)*(1/32768.0f))*g; *r+=((s[1]+(s[3]-s[1])*f)*(1/32768.0f))*g; } }
 
 static void deck_sample(Deck*k,float*L,float*R){
   float l=0,r=0;
@@ -177,6 +208,7 @@ static void deck_sample(Deck*k,float*L,float*R){
     double rate=k->scratch? k->svel : tempo_mul(k)*(1+k->bend); double step=rate*k->rate/(double)OUTSR;
     long p=(long)k->pos; if(p>=0&&p<k->n-1){ float f=(float)(k->pos-p); int16_t*s=&k->pcm[p*2];
       l=(s[0]+(s[2]-s[0])*f)*(1/32768.0f); r=(s[1]+(s[3]-s[1])*f)*(1/32768.0f); }
+    stem_add_at(k,k->pos,&l,&r);
     k->pos+=step;
     if(k->loopOn&&step>0&&k->pos>=k->lout&&k->lout>k->lin) k->pos-=(k->lout-k->lin);
     if(k->pos>=k->n-1){ k->pos=k->n-1; k->playing=0; k->preview=0; } if(k->pos<0)k->pos=0;
@@ -227,7 +259,7 @@ static void add_user(const char*path,int src){ if(nlib>=MAXT)return; Track*t=&li
   snprintf(t->lic,sizeof t->lic,"Your file"); t->src=src; nlib++; }
 static void scan(const char*dir,int src,int depth){ if(depth>6)return; DIR*d=opendir(dir); if(!d)return; struct dirent*e;
   while((e=readdir(d))){ if(e->d_name[0]=='.')continue; char p[512]; snprintf(p,sizeof p,"%s/%s",dir,e->d_name); struct stat s;
-    if(stat(p,&s)!=0)continue; if(S_ISDIR(s.st_mode)) scan(p,src,depth+1); else if(is_audio(e->d_name)) add_user(p,src); } closedir(d); }
+    if(stat(p,&s)!=0)continue; if(S_ISDIR(s.st_mode)) scan(p,src,depth+1); else if(is_audio(e->d_name)&&!is_stem_sidecar(e->d_name)) add_user(p,src); } closedir(d); }
 static int cmp_t(const void*a,const void*b){ Track*x=&lib[*(int*)a],*y=&lib[*(int*)b]; int r=0;
   if(sortmode==1) r=strcasecmp(x->artist,y->artist); else if(sortmode==2){ r=(x->bpm>y->bpm)-(x->bpm<y->bpm); } else if(sortmode==3) r=x->src-y->src;
   return r?r:strcasecmp(x->title,y->title); }
@@ -241,7 +273,7 @@ static void lib_scan(void){ nlib=0;
   mkdir("/data/djdecks",0777); mkdir("/data/djdecks/music",0777); scan("/data/djdecks/music",1,0);
   static const char*sub[]={"music","Music","MUSIC","djdecks","DJDecks","DJDECKS","TwinDecks"};
   for(int u=0;u<8;u++){ char root[32]; snprintf(root,sizeof root,"/mnt/usb%d",u); DIR*d=opendir(root); if(!d)continue;
-    struct dirent*e; while((e=readdir(d))){ char p[512]; snprintf(p,sizeof p,"%s/%s",root,e->d_name); if(is_audio(e->d_name)) add_user(p,2); } closedir(d);
+    struct dirent*e; while((e=readdir(d))){ char p[512]; snprintf(p,sizeof p,"%s/%s",root,e->d_name); if(is_audio(e->d_name)&&!is_stem_sidecar(e->d_name)) add_user(p,2); } closedir(d);
     for(unsigned q=0;q<sizeof sub/sizeof*sub;q++){ char p[64]; snprintf(p,sizeof p,"%s/%s",root,sub[q]); scan(p,2,0); } }
   lib_sort(); }
 
@@ -289,14 +321,22 @@ static void load_track(int d,int ti){
   if(k->playing){ set_toast("Pause the deck before loading a new track"); return; }
   char m[200]; snprintf(m,sizeof m,"Loading %s ...",t->title); set_toast(m); draw_frame(); present();
   long fr; int sr; int16_t*p=decode(t->path,&fr,&sr); if(!p){ set_toast("Could not decode that file"); return; }
-  SDL_LockAudioDevice(adev); int16_t*old=k->pcm; k->pcm=0; k->playing=0; k->preview=0; SDL_UnlockAudioDevice(adev); free(old);
+  SDL_LockAudioDevice(adev); int16_t*old=k->pcm; k->pcm=0; k->playing=0; k->preview=0; stem_clear(k); SDL_UnlockAudioDevice(adev); free(old);
   k->n=fr; k->rate=sr; k->pcm=p; /* analyse while deck still silent */
   Deck tmp; (void)tmp; k->playing=0;
   int16_t*keep=k->pcm; SDL_LockAudioDevice(adev); k->pcm=0; SDL_UnlockAudioDevice(adev); k->pcm=keep;
   analyse(k,t->bpm); if(t->bpm<=0) t->bpm=k->bpm;
   snprintf(k->title,sizeof k->title,"%s",t->title); snprintf(k->artist,sizeof k->artist,"%s",t->artist);
+  stem_load_all(k,t->path);
   SDL_LockAudioDevice(adev); k->pos=k->first*k->rate; k->cue=k->pos; k->loopOn=0; k->linSet=0; memset(k->hcset,0,sizeof k->hcset); k->sync=0; SDL_UnlockAudioDevice(adev);
-  snprintf(m,sizeof m,"Deck %c  %s  %.1f BPM",'A'+d,t->title,k->bpm); set_toast(m); }
+  { int sc=0; for(int i=0;i<NSTEM;i++) if(k->sthave[i]) sc++;
+    if(sc) snprintf(m,sizeof m,"Deck %c  %s  %.1f BPM  %d stems",'A'+d,t->title,k->bpm,sc);
+    else snprintf(m,sizeof m,"Deck %c  %s  %.1f BPM",'A'+d,t->title,k->bpm);
+    set_toast(m); } }
+static void stem_vocal_off(Deck*k){ if(k->sthave[STEM_VOC]) k->stem[STEM_VOC]=0;
+  else { k->mid=-0.85f; k->hi=-0.35f; deck_coefs(k); } }
+static void stem_instrumental(Deck*k){ if(k->sthave[STEM_VOC]) k->stem[STEM_VOC]=0;
+  else { k->mid=-0.9f; k->hi=-0.4f; k->lo=0.15f; deck_coefs(k); } }
 static void phase_align(int d){ Deck*k=&D[d],*o=&D[1-d]; if(!k->pcm||!o->pcm||k->bpm<=0||o->bpm<=0)return;
   double a=beatpos(o),b=beatpos(k); double df=(a-floor(a))-(b-floor(b)); if(df>0.5)df-=1; if(df<-0.5)df+=1;
   SDL_LockAudioDevice(adev); k->pos+=df*spb_frames(k); if(k->pos<0)k->pos=0; SDL_UnlockAudioDevice(adev); }
@@ -334,7 +374,7 @@ static void loop_act(int d,int a){ Deck*k=&D[d]; if(!k->pcm)return; SDL_LockAudi
 
 /* ---------- controls & focus ---------- */
 enum { K_BTN, K_KNOB, K_VFAD, K_HFAD };
-enum { A_PLAY, A_CUE, A_SYNC, A_KEY, A_RANGE, A_VINYL, A_HC, A_LOOP, A_FXT, A_CURVE, A_VAL };
+enum { A_PLAY, A_CUE, A_SYNC, A_KEY, A_RANGE, A_VINYL, A_HC, A_LOOP, A_FXT, A_CURVE, A_VAL, A_VOCUT, A_INST };
 typedef struct { float x,y,w,h; int kind,deck,act,sub; float*v,lo,hi,def; const char*label; int bip; } Ctl;
 static Ctl ctl[96]; static int nctl=0, focus=0;
 static int addc(float x,float y,float w,float h,int kind,int deck,int act,int sub,float*v,float lo,float hi,float def,const char*lbl,int bip){
@@ -362,7 +402,10 @@ static void build_ctl(void){ nctl=0;
     addc(sx-26,PY+192-26,52,52,K_KNOB,d,A_VAL,0,&k->mid,-1,1,0,"MID",1);
     addc(sx-26,PY+256-26,52,52,K_KNOB,d,A_VAL,0,&k->lo,-1,1,0,"LOW",1);
     addc(sx-26,PY+320-26,52,52,K_KNOB,d,A_VAL,0,&k->filt,-1,1,0,"FILTER",1);
-    addc(sx-72,PY+368,144,40,K_BTN,d,A_FXT,0,0,0,0,0,"FX",0);
+    for(int i=0;i<NSTEM;i++) addc(px_+24+i*82,PY+520,74,40,K_VFAD,d,A_VAL,10+i,&k->stem[i],0,1,0,STEM_LBL[i],0);
+    addc(sx-72,PY+368,68,40,K_BTN,d,A_FXT,0,0,0,0,0,"FX",0);
+    addc(sx+4,PY+368,68,40,K_BTN,d,A_VOCUT,0,0,0,0,0,"VOC CUT",0);
+    addc(sx+76,PY+368,68,40,K_BTN,d,A_INST,0,0,0,0,0,"INST",0);
     addc(sx-26,PY+448-26,52,52,K_KNOB,d,A_VAL,0,&k->fxamt,0,1,0,"FX AMT",0);
     addc(sx-24,PY+496,48,136,K_VFAD,d,A_VAL,0,&k->fader,0,1,1,"",0); }
   addc(800,PY+648,320,40,K_HFAD,-1,A_VAL,0,&xf,-1,1,0,"",1);
@@ -389,6 +432,7 @@ static void build_bg(void){ T=bgb; rect(0,0,W,H,C_BG,1);
   panel(MX,PY,432,728);
   caplabel(STRIPX[0]-6,PY+28,"A",ACC[0]); caplabel(STRIPX[1]-6,PY+28,"B",ACC[1]);
   static const char*rows[]={"TRIM","HI","MID","LOW","FILTER"}; for(int i=0;i<5;i++) text_c(F_CAP,960,PY+64+i*64+4,rows[i],C_DIM,1,0,1.2f);
+  text_c(F_CAP,960,PY+536,"STEMS",C_DIM,1,0,1.2f);
   text_c(F_CAP,960,PY+392,"FX",C_DIM,1,0,1.2f); text_c(F_CAP,960,PY+452,"AMOUNT",C_DIM,1,0,1.2f);
   T=fb; }
 static void draw_btn(Ctl*c,int on,uint32_t acc,const char*lbl,int fill){
@@ -479,8 +523,11 @@ static void draw_controls(void){
         if(c->sub>=L_4&&k->loopOn&&k->bpm>0){ int nb=c->sub==L_4?4:c->sub==L_8?8:16; on=fabs(len-nb*spb_frames(k))<2; }
         draw_btn(c,on,acc,c->sub==L_EXIT&&!k->loopOn?"RELOOP":c->label,0); } break;
     case A_FXT: { static const char*fx[]={"OFF","ECHO","REVERB","FLANGER","SWEEP"}; draw_btn(c,k->fxtype!=0,acc,fx[k->fxtype],0); } break;
+    case A_VOCUT: { int on=k->sthave[STEM_VOC]?k->stem[STEM_VOC]<0.02f:(k->mid<-0.5f); draw_btn(c,on,acc,"VOC CUT",0); } break;
+    case A_INST: { int on=k->sthave[STEM_VOC]?k->stem[STEM_VOC]<0.02f:(k->mid<-0.6f); draw_btn(c,on,0x6BCF7A,"INST",0); } break;
     case A_CURVE: { static const char*cv[]={"SMOOTH","LINEAR","CUT"}; rrect(c->x,c->y,c->w,c->h,6,C_PANEL2,1,0); text_c(F_CAP,c->x+c->w/2,c->y+19,cv[curve],C_DIM,1,0,1.2f); } break;
-    case A_VAL: if(c->kind==K_KNOB) draw_knob(c,d>=0?acc:C_TEXT); else if(c->kind==K_VFAD) draw_vfad(c,acc,c->sub==1); else draw_hfad(c); break; }
+    case A_VAL: { uint32_t col=d>=0?acc:C_TEXT; if(c->sub>=10&&c->sub<10+NSTEM){ int si=c->sub-10; if(!k||!k->sthave[si]) col=C_MUTE; }
+      if(c->kind==K_KNOB) draw_knob(c,col); else if(c->kind==K_VFAD) draw_vfad(c,col,c->sub==1); else draw_hfad(c); } break; }
     if(i==focus){ float m=4; rrect(c->x-m,c->y-m,c->w+2*m,c->h+2*m,c->kind==K_KNOB?c->w/2+m:8,0xFFFFFF,0.95f,2); } } }
 
 /* ---------- overlays ---------- */
@@ -508,7 +555,8 @@ static void draw_help(void){ dim_all(0.75f); float x=320,y=110,w=1280,h=860; pan
   static const char*L[][2]={{"L2  /  R2","Play / pause deck A / B"},{"L1  /  R1","Cue deck A / B (hold to preview)"},{"Left stick  left/right","Jog deck A: nudge, or scratch in vinyl mode"},
     {"Right stick  left/right","Jog deck B: nudge, or scratch in vinyl mode"},{"Touchpad  (slide finger)","Crossfader: left edge A, right edge B"},{"D-pad","Move the highlight between controls"},
     {"Left stick  up/down","Adjust the highlighted knob or fader"},{"Cross","Press the highlighted button / set or jump to hot cue"},{"Circle","Reset highlighted control, clear hot cue"},
-    {"Square","Sync the deck under the highlight"},{"Triangle","Library"},{"L3  /  R3","Toggle vinyl mode A / B"},{"Options","This screen  (Square here: credits)"}};
+    {"Square","Sync the deck under the highlight"},{"Triangle","Library"},{"L3  /  R3","Toggle vinyl mode A / B"},{"Options","This screen  (Square here: credits)"},
+    {"VOC CUT / INST","Mute vocals (stem fader or EQ karaoke cut)"},{"VOC DRM BAS OTH","Stem layer faders when sidecar files are present"}};
   for(unsigned i=0;i<sizeof L/sizeof*L;i++){ float ry=y+120+i*48; text(F_BODY,x+40,ry,L[i][0],C_TEXT,1,0,0); text(F_BODY,x+440,ry,L[i][1],C_DIM,1,0,0); if(i) rect((int)x+40,(int)ry-30,(int)w-80,1,0x23272C,1); }
   float fx=x+40,fy=y+h-28; fx=icon_chip(fx,fy,G_SQ,"Credits"); icon_chip(fx,fy,G_O,"Close"); }
 static void draw_cred(void){ dim_all(0.75f); float x=240,y=90,w=1440,h=900; panel(x,y,w,h); text(F_MID,x+32,y+56,"Credits",C_TEXT,1,0,0);
@@ -544,7 +592,8 @@ static void press_ctl(int down){ Ctl*c=&ctl[focus]; int d=c->deck; Deck*k=d>=0?&
   case A_RANGE: { float m=tempo_mul(k); k->range=(k->range+1)%3; k->tempo=clampf((m-1)/RANGES[k->range],-1,1); } break;
   case A_VINYL: k->vinyl=!k->vinyl; break; case A_HC: hotcue(d,c->sub,0); break; case A_LOOP: loop_act(d,c->sub); break;
   case A_FXT: k->fxtype=(k->fxtype+1)%5; if(k->fxtype&&k->fxamt<0.05f)k->fxamt=0.5f; break; case A_CURVE: curve=(curve+1)%3; break;
-  case A_VAL: *c->v=c->def; break; } }
+  case A_VOCUT: stem_vocal_off(k); break; case A_INST: stem_instrumental(k); break;
+  case A_VAL: if(c->sub>=10&&c->sub<10+NSTEM){ int si=c->sub-10; *c->v=k->sthave[si]?1.0f:0; } else *c->v=c->def; break; } }
 int main(int argc,char*argv[]){ (void)argc;(void)argv;
   if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_AUDIO)!=0){ for(;;){} }
   win=SDL_CreateWindow("Twin Decks",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,W,H,0); if(!win)for(;;){}
